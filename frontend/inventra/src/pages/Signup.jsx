@@ -85,8 +85,7 @@ function buildPayload(v, location) {
 /* ------------------------------ UI pieces ----------------------------- */
 
 const inputClass = (hasError) =>
-  `h-12 w-full rounded-md border bg-white px-4 text-[15px] outline-none transition-[border-color,box-shadow] duration-200 placeholder:text-[#A5A49D] focus:border-[#2F6F62] focus:shadow-[0_0_0_3px_rgba(47,111,98,0.12)] ${
-    hasError ? "border-[#B4443A]" : "border-[#E7E6E0]"
+  `h-12 w-full rounded-md border bg-white px-4 text-[15px] outline-none transition-[border-color,box-shadow] duration-200 placeholder:text-[#A5A49D] focus:border-[#2F6F62] focus:shadow-[0_0_0_3px_rgba(47,111,98,0.12)] ${hasError ? "border-[#B4443A]" : "border-[#E7E6E0]"
   }`;
 
 function Field({ id, label, error, hint, className = "", children }) {
@@ -183,15 +182,51 @@ export default function SignUpPage() {
 
     const payload = buildPayload(values, location);
     setSubmitting(true);
-    // TODO: await fetch("/api/auth/register-store", { method: "POST", headers: {...}, body: JSON.stringify(payload) })
-    console.log("signup payload", payload);
-    await new Promise((r) => setTimeout(r, 1000));
-    setSubmitting(false);
+
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/auth/register-store",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Registration failed.");
+      }
+
+      alert("Account and store registered successfully!");
+
+      console.log("Registration successful:", data);
+
+      // Clear the form after successful registration
+      setValues(INITIAL);
+      setErrors({});
+      setLocation({
+        mode: "manual",
+        status: "idle",
+        latitude: null,
+        longitude: null,
+      });
+
+    } catch (error) {
+      console.error("Registration error:", error);
+
+      alert(error.message || "Unable to register. Please try again.");
+
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const modeButton = (active) =>
-    `flex-1 rounded-md border px-4 py-3 text-left text-[15px] font-medium transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F6F62] ${
-      active ? "border-[#2F6F62] bg-[#F1F6F4]" : "border-[#E7E6E0] bg-white hover:border-[#111111]"
+    `flex-1 rounded-md border px-4 py-3 text-left text-[15px] font-medium transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F6F62] ${active ? "border-[#2F6F62] bg-[#F1F6F4]" : "border-[#E7E6E0] bg-white hover:border-[#111111]"
     }`;
 
   return (
