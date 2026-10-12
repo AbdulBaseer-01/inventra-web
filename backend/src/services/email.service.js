@@ -1,20 +1,28 @@
 const nodemailer = require("nodemailer");
 
-const hasEmailConfig = Boolean(process.env.EMAIL_USER && process.env.EMAIL_PASS);
+const smtpPort = Number(process.env.SMTP_PORT || 465);
+const smtpSecure = process.env.SMTP_SECURE !== "false";
+const hasEmailConfig = Boolean(
+    process.env.SMTP_HOST &&
+    process.env.SMTP_USER &&
+    process.env.SMTP_PASS
+);
 
 const transporter = hasEmailConfig
     ? nodemailer.createTransport({
-        service: process.env.EMAIL_SERVICE || "gmail",
+        host: process.env.SMTP_HOST,
+        port: smtpPort,
+        secure: smtpSecure,
         auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS
         }
     })
     : null;
 
 const verifyEmailTransport = async () => {
     if (!transporter) {
-        throw new Error("Email is not configured. Set EMAIL_USER and EMAIL_PASS.");
+        throw new Error("Email is not configured. Set SMTP_HOST, SMTP_USER, and SMTP_PASS.");
     }
 
     await transporter.verify();
@@ -23,11 +31,11 @@ const verifyEmailTransport = async () => {
 
 const sendEmail = async ({ to, subject, html }) => {
     if (!transporter) {
-        throw new Error("Email is not configured. Set EMAIL_USER and EMAIL_PASS.");
+        throw new Error("Email is not configured. Set SMTP_HOST, SMTP_USER, and SMTP_PASS.");
     }
 
     const result = await transporter.sendMail({
-        from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
         to,
         subject,
         html
