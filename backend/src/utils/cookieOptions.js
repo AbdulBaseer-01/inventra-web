@@ -1,9 +1,12 @@
-const isProduction = process.env.NODE_ENV === "production";
+const isSecureDeployment =
+    process.env.COOKIE_SECURE === "true" ||
+    process.env.CLIENT_URL?.startsWith("https://") ||
+    process.env.NODE_ENV === "production";
 
 const baseCookieOptions = {
     httpOnly: true,
-    secure: isProduction,
-    sameSite: isProduction ? "none" : "lax"
+    secure: isSecureDeployment,
+    sameSite: isSecureDeployment ? "none" : "lax"
 };
 
 const accessCookieOptions = {

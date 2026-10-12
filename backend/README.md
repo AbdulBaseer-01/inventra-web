@@ -53,3 +53,7 @@ SMTP_FROM=Inventra <your-account@gmail.com>
 Do not use your regular Google password, and do not commit `.env` to source
 control. Port `587` with `SMTP_SECURE=false` uses STARTTLS. Port `465` with
 `SMTP_SECURE=true` uses implicit TLS.
+
+For a deployed HTTPS frontend, set `CLIENT_URL` to the exact frontend origin
+and set `COOKIE_SECURE=true`. This enables secure cross-site authentication
+cookies required when the frontend and API use different domains.
