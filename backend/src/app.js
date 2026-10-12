@@ -35,6 +35,19 @@ app.use(
     })
 );
 
+app.use(async (req, res, next) => {
+    try {
+        await connectDB();
+        next();
+    } catch (error) {
+        console.error("Database unavailable:", error.message);
+        res.status(503).json({
+            success: false,
+            message: "Database temporarily unavailable"
+        });
+    }
+});
+
 app.use(morgan("dev"));
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
