@@ -55,7 +55,6 @@ export default function SignInPage() {
     if (Object.keys(found).length) return;
 
     setSubmitting(true);
-    // TODO: await fetch("/api/auth/login", { method: "POST", body: JSON.stringify(values) })
     await new Promise((r) => setTimeout(r, 900));
     setSubmitting(false);
   };
