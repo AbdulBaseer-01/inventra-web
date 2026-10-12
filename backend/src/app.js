@@ -13,6 +13,9 @@ const productRoutes = require("./routes/product.routes");
 
 const app = express();
 
+const dns = require("node:dns");
+dns.setDefaultResultOrder("ipv4first");
+
 app.set("trust proxy", 1);
 
 app.use(express.json({ limit: "10kb" }));

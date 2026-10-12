@@ -25,31 +25,29 @@ The server listens on `PORT` (default `5000`) and allows the frontend at `CLIENT
 - `GET /api/auth/verify-email/:token`
 - `POST /api/auth/forgot-password`
 - `POST /api/auth/reset-password/:token`
-Access and refresh tokens are stored in HTTP-only cookies. Configure the SMTP
-variables before starting the server so account verification and password reset
-emails can be delivered.
+Access and refresh tokens are stored in HTTP-only cookies. Configure Resend
+before starting the server so account verification and password reset emails
+can be delivered.
 
-## Gmail SMTP setup
+## Resend setup
 
-For Gmail, use an app password instead of your normal Google account password:
-
-1. Sign in to the Google account that will send Inventra emails.
-2. Open [Google Account Security](https://myaccount.google.com/security).
-3. Enable **2-Step Verification** for the account.
-4. Open [App passwords](https://myaccount.google.com/apppasswords).
-5. Create an app password, for example with the name `Inventra`.
-6. Copy the generated 16-character password into `SMTP_PASS`.
-7. Set the SMTP values in `.env`:
+1. Create an account at [Resend](https://resend.com/).
+2. Open **API Keys** in the Resend dashboard and create an API key.
+3. Copy the key immediately; Resend only displays the full key once.
+4. Open **Domains**, add a domain you control, and publish the DNS records
+   Resend provides. Wait until the domain is marked **Verified**.
+5. Set the Render environment variables:
 
 ```env
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=your-account@gmail.com
-SMTP_PASS=your-16-character-app-password
-SMTP_FROM=Inventra <your-account@gmail.com>
+RESEND_API_KEY=re_your_api_key
+RESEND_FROM=Inventra <noreply@your-verified-domain.com>
 ```
 
-Do not use your regular Google password, and do not commit `.env` to source
-control. Port `587` with `SMTP_SECURE=false` uses STARTTLS and is recommended
-for cloud deployments. Port `465` with `SMTP_SECURE=true` uses implicit TLS.
+`RESEND_FROM` must use the verified domain. During development, Resend may
+allow sending only to the email address associated with your Resend account
+until a sending domain is verified. Do not commit `.env` or expose
+`RESEND_API_KEY` in frontend code.
+
+After setting the variables, redeploy the Render service and test registration
+or password reset. The backend uses Resend over HTTPS, so it does not require
+outbound SMTP ports such as 465 or 587.
