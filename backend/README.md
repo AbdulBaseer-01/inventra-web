@@ -43,13 +43,13 @@ For Gmail, use an app password instead of your normal Google account password:
 
 ```env
 SMTP_HOST=smtp.gmail.com
-SMTP_PORT=465
-SMTP_SECURE=true
+SMTP_PORT=587
+SMTP_SECURE=false
 SMTP_USER=your-account@gmail.com
 SMTP_PASS=your-16-character-app-password
 SMTP_FROM=Inventra <your-account@gmail.com>
 ```
 
 Do not use your regular Google password, and do not commit `.env` to source
-control. Gmail also supports port `587` with `SMTP_SECURE=false`; Nodemailer
-will use STARTTLS for that configuration.
+control. Port `587` with `SMTP_SECURE=false` uses STARTTLS and is recommended
+for cloud deployments. Port `465` with `SMTP_SECURE=true` uses implicit TLS.

@@ -49,11 +49,17 @@ app.get("/health", (_req, res) => {
 
 const startServer = async () => {
     await connectDB();
-    await verifyEmailTransport();
     const port = Number(process.env.PORT || 5000);
     app.listen(port, () => {
         console.log(`Server running on port ${port}`);
     });
+
+    try {
+        await verifyEmailTransport();
+    } catch (error) {
+        console.error(`Email transport verification failed: ${error.message}`);
+        console.error("The API is running, but verification and password-reset emails may fail until SMTP is configured.");
+    }
 };
 
 if (require.main === module) {
