@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion, MotionConfig } from "framer-motion";
 import { apiRequest } from "../lib/api.js";
 
@@ -43,6 +43,7 @@ export default function SignInPage() {
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+  const navigate = useNavigate();
 
   const onChange = (e) => {
     const { name, value } = e.target;
@@ -57,9 +58,18 @@ export default function SignInPage() {
     if (Object.keys(found).length) return;
 
     setSubmitting(true);
-    // TODO: await fetch("/api/auth/login", { method: "POST", body: JSON.stringify(values) })
-    await new Promise((r) => setTimeout(r, 900));
-    setSubmitting(false);
+    setFormError("");
+    try {
+      await apiRequest("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify(values),
+      });
+      navigate("/dashboard", { replace: true });
+    } catch (error) {
+      setFormError(error.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
