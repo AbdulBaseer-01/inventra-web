@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, MotionConfig } from "framer-motion";
+import { apiRequest } from "../lib/api.js";
 
-const BRAND = "Shelfline";
+const BRAND = "Inventra";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function validate({ email, password }) {
@@ -41,6 +42,7 @@ export default function SignInPage() {
   const [values, setValues] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
 
   const onChange = (e) => {
     const { name, value } = e.target;
@@ -55,6 +57,7 @@ export default function SignInPage() {
     if (Object.keys(found).length) return;
 
     setSubmitting(true);
+    // TODO: await fetch("/api/auth/login", { method: "POST", body: JSON.stringify(values) })
     await new Promise((r) => setTimeout(r, 900));
     setSubmitting(false);
   };
@@ -98,6 +101,11 @@ export default function SignInPage() {
             >
               <h2 className="text-3xl font-semibold tracking-tight">Sign in</h2>
               <p className="mt-2 text-[15px] text-[#6B6B66]">Welcome back. Enter your details to continue.</p>
+              {formError && (
+                <p role="alert" className="mt-4 rounded-md bg-[#FDF0EE] px-3 py-2 text-sm text-[#B4443A]">
+                  {formError}
+                </p>
+              )}
 
               <form onSubmit={onSubmit} noValidate className="mt-8 space-y-5">
                 <Field id="email" label="Email" error={errors.email}>

@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion, MotionConfig } from "framer-motion";
+import { apiRequest } from "../lib/api.js";
 
-const BRAND = "Shelfline";
+const BRAND = "Inventra";
 
 const CATEGORIES = [
   { id: "grocery", label: "Grocery" },
@@ -44,6 +45,9 @@ function validate(v, location) {
   else if (!PHONE_RE.test(v.phone.replace(/\s/g, ""))) e.phone = "Enter a valid 10-digit mobile number.";
   if (!v.password) e.password = "Create a password.";
   else if (v.password.length < 8) e.password = "Use at least 8 characters.";
+  else if (!/[A-Z]/.test(v.password)) e.password = "Include at least one uppercase letter.";
+  else if (!/[a-z]/.test(v.password)) e.password = "Include at least one lowercase letter.";
+  else if (!/[0-9]/.test(v.password)) e.password = "Include at least one number.";
   if (!v.confirmPassword) e.confirmPassword = "Confirm your password.";
   else if (v.confirmPassword !== v.password) e.confirmPassword = "Passwords don't match.";
 
@@ -85,8 +89,7 @@ function buildPayload(v, location) {
 /* ------------------------------ UI pieces ----------------------------- */
 
 const inputClass = (hasError) =>
-  `h-12 w-full rounded-md border bg-white px-4 text-[15px] outline-none transition-[border-color,box-shadow] duration-200 placeholder:text-[#A5A49D] focus:border-[#2F6F62] focus:shadow-[0_0_0_3px_rgba(47,111,98,0.12)] ${
-    hasError ? "border-[#B4443A]" : "border-[#E7E6E0]"
+  `h-12 w-full rounded-md border bg-white px-4 text-[15px] outline-none transition-[border-color,box-shadow] duration-200 placeholder:text-[#A5A49D] focus:border-[#2F6F62] focus:shadow-[0_0_0_3px_rgba(47,111,98,0.12)] ${hasError ? "border-[#B4443A]" : "border-[#E7E6E0]"
   }`;
 
 function Field({ id, label, error, hint, className = "", children }) {
@@ -124,6 +127,8 @@ export default function SignUpPage() {
   const [values, setValues] = useState(INITIAL);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [location, setLocation] = useState({
     mode: "manual", // "current" | "manual"
     status: "idle", // "idle" | "detecting" | "detected" | "failed"
@@ -183,15 +188,37 @@ export default function SignUpPage() {
 
     const payload = buildPayload(values, location);
     setSubmitting(true);
-    // TODO: await fetch("/api/auth/register-store", { method: "POST", headers: {...}, body: JSON.stringify(payload) })
-    console.log("signup payload", payload);
-    await new Promise((r) => setTimeout(r, 1000));
-    setSubmitting(false);
+    setFormError("");
+    setSuccessMessage("");
+
+    try {
+      const data = await apiRequest("/api/auth/register-store", {
+    method: "POST",
+    body: JSON.stringify(payload),
+      });
+      setSuccessMessage(data.message);
+
+      // Clear the form after successful registration
+      setErrors({});
+      setLocation({
+        mode: "manual",
+        status: "idle",
+        latitude: null,
+        longitude: null,
+      });
+
+    } catch (error) {
+      console.error("Registration error:", error);
+
+      setFormError(error.message || "Unable to register. Please try again.");
+
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const modeButton = (active) =>
-    `flex-1 rounded-md border px-4 py-3 text-left text-[15px] font-medium transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F6F62] ${
-      active ? "border-[#2F6F62] bg-[#F1F6F4]" : "border-[#E7E6E0] bg-white hover:border-[#111111]"
+    `flex-1 rounded-md border px-4 py-3 text-left text-[15px] font-medium transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F6F62] ${active ? "border-[#2F6F62] bg-[#F1F6F4]" : "border-[#E7E6E0] bg-white hover:border-[#111111]"
     }`;
 
   return (
@@ -206,6 +233,46 @@ export default function SignUpPage() {
           </Link>
         </header>
 
+        {successMessage ? (
+          <motion.main
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="mx-auto max-w-3xl px-5 pb-20 pt-20 sm:px-8"
+          >
+            <section className="mx-auto max-w-lg rounded-lg border border-[#E7E6E0] bg-white p-8 text-center sm:p-10">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#F1F6F4] text-xl text-[#2F6F62]">
+                ✓
+              </div>
+              <h1 className="mt-6 text-3xl font-semibold tracking-tight">Check your email</h1>
+              <p className="mt-4 text-[15px] leading-relaxed text-[#6B6B66]">
+                {successMessage}
+              </p>
+              <p className="mt-3 text-[15px] leading-relaxed text-[#6B6B66]">
+                Open the verification link in your email to activate your store account.
+              </p>
+              <p className="mt-5 break-all font-medium text-[#111111]">{values.email}</p>
+              <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+                <Link
+                  to="/signin"
+                  className="inline-flex h-11 items-center justify-center rounded-md bg-[#2F6F62] px-5 text-sm font-medium text-white hover:bg-[#275c52]"
+                >
+                  Continue to sign in
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSuccessMessage("");
+                    setValues(INITIAL);
+                  }}
+                  className="h-11 rounded-md border border-[#E7E6E0] px-5 text-sm font-medium hover:border-[#111111]"
+                >
+                  Register another store
+                </button>
+              </div>
+            </section>
+          </motion.main>
+        ) : (
         <motion.main
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -216,6 +283,11 @@ export default function SignUpPage() {
           <p className="mt-4 max-w-lg text-[17px] leading-relaxed text-[#6B6B66]">
             Manage your inventory and sell products to customers nearby. Setup takes a few minutes.
           </p>
+          {formError && (
+            <p role="alert" className="mt-4 rounded-md bg-[#FDF0EE] px-3 py-2 text-sm text-[#B4443A]">
+              {formError}
+            </p>
+          )}
 
           <form onSubmit={onSubmit} noValidate className="mt-10">
             {/* 1. Owner */}
@@ -342,6 +414,7 @@ export default function SignUpPage() {
             </div>
           </form>
         </motion.main>
+        )}
       </div>
     </MotionConfig>
   );
