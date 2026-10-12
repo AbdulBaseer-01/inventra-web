@@ -10,7 +10,7 @@ import { motion, MotionConfig } from "framer-motion";
 /*   line    #E7E6E0   accent (muted teal) #2F6F62                      */
 /* ------------------------------------------------------------------ */
 
-const BRAND = "Shelfline";
+const BRAND = "Inventra";
 
 const INVENTORY = [
   { name: "Amul Milk", stock: 24, status: "Available" },

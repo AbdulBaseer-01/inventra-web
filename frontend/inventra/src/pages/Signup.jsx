@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion, MotionConfig } from "framer-motion";
+import { apiRequest } from "../lib/api.js";
 
-const BRAND = "Shelfline";
+const BRAND = "Inventra";
 
 const CATEGORIES = [
   { id: "grocery", label: "Grocery" },
@@ -44,6 +45,9 @@ function validate(v, location) {
   else if (!PHONE_RE.test(v.phone.replace(/\s/g, ""))) e.phone = "Enter a valid 10-digit mobile number.";
   if (!v.password) e.password = "Create a password.";
   else if (v.password.length < 8) e.password = "Use at least 8 characters.";
+  else if (!/[A-Z]/.test(v.password)) e.password = "Include at least one uppercase letter.";
+  else if (!/[a-z]/.test(v.password)) e.password = "Include at least one lowercase letter.";
+  else if (!/[0-9]/.test(v.password)) e.password = "Include at least one number.";
   if (!v.confirmPassword) e.confirmPassword = "Confirm your password.";
   else if (v.confirmPassword !== v.password) e.confirmPassword = "Passwords don't match.";
 
@@ -123,6 +127,8 @@ export default function SignUpPage() {
   const [values, setValues] = useState(INITIAL);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [location, setLocation] = useState({
     mode: "manual", // "current" | "manual"
     status: "idle", // "idle" | "detecting" | "detected" | "failed"
@@ -182,31 +188,17 @@ export default function SignUpPage() {
 
     const payload = buildPayload(values, location);
     setSubmitting(true);
+    setFormError("");
+    setSuccessMessage("");
 
     try {
-      const response = await fetch(
-        "http://localhost:5000/api/auth/register-store",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Registration failed.");
-      }
-
-      alert("Account and store registered successfully!");
-
-      console.log("Registration successful:", data);
+      const data = await apiRequest("/api/auth/register-store", {
+    method: "POST",
+    body: JSON.stringify(payload),
+      });
+      setSuccessMessage(data.message);
 
       // Clear the form after successful registration
-      setValues(INITIAL);
       setErrors({});
       setLocation({
         mode: "manual",
@@ -218,7 +210,7 @@ export default function SignUpPage() {
     } catch (error) {
       console.error("Registration error:", error);
 
-      alert(error.message || "Unable to register. Please try again.");
+      setFormError(error.message || "Unable to register. Please try again.");
 
     } finally {
       setSubmitting(false);
@@ -241,6 +233,46 @@ export default function SignUpPage() {
           </Link>
         </header>
 
+        {successMessage ? (
+          <motion.main
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="mx-auto max-w-3xl px-5 pb-20 pt-20 sm:px-8"
+          >
+            <section className="mx-auto max-w-lg rounded-lg border border-[#E7E6E0] bg-white p-8 text-center sm:p-10">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#F1F6F4] text-xl text-[#2F6F62]">
+                ✓
+              </div>
+              <h1 className="mt-6 text-3xl font-semibold tracking-tight">Check your email</h1>
+              <p className="mt-4 text-[15px] leading-relaxed text-[#6B6B66]">
+                {successMessage}
+              </p>
+              <p className="mt-3 text-[15px] leading-relaxed text-[#6B6B66]">
+                Open the verification link in your email to activate your store account.
+              </p>
+              <p className="mt-5 break-all font-medium text-[#111111]">{values.email}</p>
+              <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+                <Link
+                  to="/signin"
+                  className="inline-flex h-11 items-center justify-center rounded-md bg-[#2F6F62] px-5 text-sm font-medium text-white hover:bg-[#275c52]"
+                >
+                  Continue to sign in
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSuccessMessage("");
+                    setValues(INITIAL);
+                  }}
+                  className="h-11 rounded-md border border-[#E7E6E0] px-5 text-sm font-medium hover:border-[#111111]"
+                >
+                  Register another store
+                </button>
+              </div>
+            </section>
+          </motion.main>
+        ) : (
         <motion.main
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -251,6 +283,11 @@ export default function SignUpPage() {
           <p className="mt-4 max-w-lg text-[17px] leading-relaxed text-[#6B6B66]">
             Manage your inventory and sell products to customers nearby. Setup takes a few minutes.
           </p>
+          {formError && (
+            <p role="alert" className="mt-4 rounded-md bg-[#FDF0EE] px-3 py-2 text-sm text-[#B4443A]">
+              {formError}
+            </p>
+          )}
 
           <form onSubmit={onSubmit} noValidate className="mt-10">
             {/* 1. Owner */}
@@ -377,6 +414,7 @@ export default function SignUpPage() {
             </div>
           </form>
         </motion.main>
+        )}
       </div>
     </MotionConfig>
   );
