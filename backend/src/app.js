@@ -10,6 +10,8 @@ const { verifyEmailTransport } = require("./services/email.service");
 
 const authRoutes = require("./routes/auth.routes");
 const productRoutes = require("./routes/product.routes");
+const customerRoutes = require("./routes/customer.routes");
+const deliveryPartnerRoutes = require("./routes/deliveryPartner.routes");
 
 const app = express();
 
@@ -51,6 +53,8 @@ app.use(async (req, res, next) => {
 app.use(morgan("dev"));
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/public", customerRoutes);
+app.use("/api/delivery-partners", deliveryPartnerRoutes);
 
 app.get("/", (req, res) => {
     res.json({

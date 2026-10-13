@@ -21,13 +21,13 @@ const createToken = () => crypto.randomBytes(32).toString("hex");
 
 const publicUser = (user) => ({
     id: user._id,
-    name: user.name || user.username,
+    name: user.name || user.username || "User",
     username: user.username,
     email: user.email,
     phone: user.phone,
     store: user.store,
     avatar: user.avatar,
-    role: user.role,
+    role: user.role || "customer",
     isVerified: user.isVerified
 });
 
@@ -57,7 +57,7 @@ const issueSession = async (user, res) => {
 exports.signup = async (req, res) => {
     let user;
     try {
-        const { username, email, password } = req.body;
+        const { username, name, email, password, phone, role } = req.body;
         const existingUser = await User.findOne({ email });
 
         if (existingUser) {
@@ -67,11 +67,17 @@ exports.signup = async (req, res) => {
             });
         }
 
+        const normalizedRole = ["customer", "store_owner", "delivery_partner", "admin"].includes(role) ? role : "customer";
+        const normalizedUsername = (username || name || "customer").trim().replace(/\s+/g, "").slice(0, 30) || "customer";
+
         const verificationToken = createToken();
         user = await User.create({
-            username,
+            name: name || normalizedUsername,
+            username: normalizedUsername,
             email,
+            phone,
             password: await bcrypt.hash(password, 12),
+            role: normalizedRole,
             verificationToken: hashToken(verificationToken)
         });
 
@@ -82,7 +88,7 @@ exports.signup = async (req, res) => {
             to: user.email,
             subject: "Verify your email",
             html: `
-                <h2>Welcome to HackPrix</h2>
+                <h2>Welcome to Inventra</h2>
                 <p>Confirm your email to activate your account.</p>
                 <a href="${verificationLink}">Verify email</a>
             `
@@ -125,6 +131,7 @@ exports.registerStore = async (req, res) => {
             username: name,
             email,
             phone,
+            role: "store_owner",
             password: await bcrypt.hash(password, 12),
             store: {
                 ...store,
@@ -226,11 +233,12 @@ exports.login = async (req, res) => {
             });
         }
 
-        await issueSession(user, res);
+        const { accessToken } = await issueSession(user, res);
 
         return res.status(200).json({
             success: true,
             message: "Logged in",
+            token: accessToken,
             user: publicUser(user)
         });
     } catch (error) {
@@ -264,11 +272,12 @@ exports.refresh = async (req, res) => {
             });
         }
 
-        await issueSession(user, res);
+        const { accessToken } = await issueSession(user, res);
 
         return res.status(200).json({
             success: true,
             message: "Session refreshed",
+            token: accessToken,
             user: publicUser(user)
         });
     } catch (error) {

@@ -23,9 +23,13 @@ const signupSchema = z.object({
             .string()
             .trim()
             .min(2, "Username must be at least 2 characters")
-            .max(40, "Username must be at most 40 characters"),
+            .max(40, "Username must be at most 40 characters")
+            .optional(),
+        name: z.string().trim().min(2, "Name must be at least 2 characters").max(80, "Name must be at most 80 characters").optional(),
+        phone: z.string().regex(/^[6-9]\d{9}$/, "Enter a valid phone number").optional(),
         email,
-        password
+        password,
+        role: z.enum(["customer", "store_owner", "delivery_partner", "admin"]).optional()
     })
 });
 
