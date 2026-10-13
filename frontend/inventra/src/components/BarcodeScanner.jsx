@@ -53,7 +53,7 @@ export default function BarcodeScanner({ value = "", onChange, onProductFound })
       }
 
       const response = await fetch(
-        `https://world.openfoodfacts.org/api/v3/product/${encodeURIComponent(code)}?fields=code,product_name,brands,image_front_url,categories,quantity`,
+        `https://world.openfoodfacts.org/api/v3/product/${encodeURIComponent(code)}?fields=code,product_name,product_name_en,brands,image_front_url,categories,categories_tags,quantity,generic_name,generic_name_en,ingredients_text,ingredients_text_en`,
         { headers: { Accept: "application/json" } }
       );
 
@@ -67,7 +67,7 @@ export default function BarcodeScanner({ value = "", onChange, onProductFound })
       if (!response.ok) throw new Error("Product lookup failed. Try again.");
 
       const result = await response.json();
-      if (result.status !== 1 || !result.product) {
+      if (!result.product || (result.status !== undefined && ![1, "1", "success"].includes(result.status))) {
         onProductFound?.({ barcode: code });
         setMessageType("info");
         setMessage("Barcode saved, but no catalogue match was found. Enter the product details manually.");
@@ -77,11 +77,12 @@ export default function BarcodeScanner({ value = "", onChange, onProductFound })
       const product = result.product;
       onProductFound?.({
         barcode: code,
-        name: product.product_name || "",
+        name: product.product_name || product.product_name_en || "",
         brand: product.brands || "",
         imageUrl: product.image_front_url || "",
-        category: product.categories?.split(",")[0]?.trim() || "",
+        category: product.categories?.split(",")[0]?.trim() || product.categories_tags?.[0] || "",
         quantity: product.quantity || "",
+        description: product.generic_name || product.generic_name_en || product.ingredients_text || product.ingredients_text_en || "",
       });
       setMessageType("success");
       setMessage("Product found. Review the details before saving.");

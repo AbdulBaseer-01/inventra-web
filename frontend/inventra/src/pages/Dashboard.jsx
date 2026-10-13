@@ -9,6 +9,27 @@ import BarcodeScanner from "../components/BarcodeScanner.jsx";
 
 const CATEGORIES = ["All products", "Grocery", "Electronics", "Hardware", "Pharmacy", "Stationery", "Other"];
 
+function mapBarcodeCategory(category) {
+  const normalized = String(category || "").toLowerCase().replace(/^en:/, "");
+  if (!normalized) return "";
+  if (normalized.includes("pharmacy") || normalized.includes("health")) return "Pharmacy";
+  if (normalized.includes("stationery") || normalized.includes("office")) return "Stationery";
+  if (normalized.includes("electronic")) return "Electronics";
+  if (normalized.includes("hardware") || normalized.includes("tool")) return "Hardware";
+  if (normalized.includes("grocery") || normalized.includes("food") || normalized.includes("beverage")) return "Grocery";
+  return "";
+}
+
+function parseBarcodeQuantity(quantity) {
+  const match = String(quantity || "").match(/(\d+(?:\.\d+)?)\s*(kg|g|l|ml|piece|pieces)?/i);
+  if (!match) return {};
+  const rawUnit = match[2]?.toLowerCase();
+  return {
+    weightValue: match[1],
+    ...(rawUnit ? { weightUnit: rawUnit === "pieces" ? "piece" : rawUnit } : {}),
+  };
+}
+
 const EMPTY_PRODUCT = {
 
   barcode: "",
@@ -92,12 +113,10 @@ function ProductForm({ initial, onCancel, onSaved }) {
       ...current,
       barcode: details.barcode || current.barcode,
       name: details.name || current.name,
-      category: CATEGORIES.includes(details.category) ? details.category : current.category,
+      category: mapBarcodeCategory(details.category) || current.category,
       imageUrl: details.imageUrl || current.imageUrl,
-      description: details.brand
-        ? [details.brand, details.quantity].filter(Boolean).join(" · ")
-        : current.description,
-      weightValue: current.weightValue || (details.quantity?.match(/\d+(\.\d+)?/) || [])[0] || current.weightValue,
+      description: details.description || [details.brand, details.quantity].filter(Boolean).join(" · ") || current.description,
+      ...parseBarcodeQuantity(details.quantity),
     }));
   };
 
