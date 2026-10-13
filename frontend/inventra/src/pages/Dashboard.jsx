@@ -3,12 +3,15 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { apiRequest, authenticatedRequest } from "../lib/api.js";
+import BarcodeScanner from "../components/BarcodeScanner.jsx";
 
 
 
 const CATEGORIES = ["All products", "Grocery", "Electronics", "Hardware", "Pharmacy", "Stationery", "Other"];
 
 const EMPTY_PRODUCT = {
+
+  barcode: "",
 
   name: "",
 
@@ -68,6 +71,20 @@ function ProductForm({ initial, onCancel, onSaved }) {
 
   const change = (name, value) => setValues((current) => ({ ...current, [name]: value }));
 
+  const applyBarcodeProduct = (details) => {
+    setValues((current) => ({
+      ...current,
+      barcode: details.barcode || current.barcode,
+      name: details.name || current.name,
+      category: CATEGORIES.includes(details.category) ? details.category : current.category,
+      imageUrl: details.imageUrl || current.imageUrl,
+      description: details.brand
+        ? [details.brand, details.quantity].filter(Boolean).join(" · ")
+        : current.description,
+      weightValue: current.weightValue || (details.quantity?.match(/\d+(\.\d+)?/) || [])[0] || current.weightValue,
+    }));
+  };
+
 
 
   const submit = async (event) => {
@@ -81,7 +98,7 @@ function ProductForm({ initial, onCancel, onSaved }) {
     const payload = {
 
       name: values.name,
-
+      barcode: values.barcode,
       category: values.category,
 
       description: values.description,
@@ -179,6 +196,12 @@ function ProductForm({ initial, onCancel, onSaved }) {
       {error && <p role="alert" className="mt-4 rounded-md bg-[#FDF0EE] px-3 py-2 text-sm text-[#B4443A]">{error}</p>}
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
+
+        <BarcodeScanner
+          value={values.barcode}
+          onChange={(value) => change("barcode", value)}
+          onProductFound={applyBarcodeProduct}
+        />
 
         {field("Product name", "name", "text", { required: true, placeholder: "e.g. Basmati rice" })}
 

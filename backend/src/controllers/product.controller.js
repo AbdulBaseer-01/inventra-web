@@ -2,6 +2,7 @@ const Product = require("../models/product.model");
 
 const productResponse = (product) => ({
     id: product._id,
+    barcode: product.barcode || "",
     name: product.name,
     category: product.category,
     description: product.description,
@@ -41,6 +42,7 @@ const validateDiscount = (discount, price) => {
 };
 
 const productInput = (body) => ({
+    ...(body.barcode?.trim() ? { barcode: body.barcode.trim() } : {}),
     name: body.name.trim(),
     category: body.category.trim(),
     description: body.description?.trim() || "",
@@ -78,7 +80,11 @@ exports.createProduct = async (req, res) => {
         res.status(201).json({ success: true, product: productResponse(product) });
     } catch (error) {
         console.error(error);
-        res.status(error.statusCode || 500).json({ success: false, message: error.message || "Unable to create product" });
+        const duplicateBarcode = error?.code === 11000 && error?.keyPattern?.barcode;
+        res.status(duplicateBarcode ? 409 : (error.statusCode || 500)).json({
+            success: false,
+            message: duplicateBarcode ? "This barcode is already assigned to one of your products" : error.message || "Unable to create product"
+        });
     }
 };
 
@@ -98,7 +104,11 @@ exports.updateProduct = async (req, res) => {
         res.json({ success: true, product: productResponse(product) });
     } catch (error) {
         console.error(error);
-        res.status(error.statusCode || 500).json({ success: false, message: error.message || "Unable to update product" });
+        const duplicateBarcode = error?.code === 11000 && error?.keyPattern?.barcode;
+        res.status(duplicateBarcode ? 409 : (error.statusCode || 500)).json({
+            success: false,
+            message: duplicateBarcode ? "This barcode is already assigned to one of your products" : error.message || "Unable to update product"
+        });
     }
 };
 

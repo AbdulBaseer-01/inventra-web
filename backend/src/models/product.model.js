@@ -2,6 +2,12 @@ const mongoose = require("mongoose");
 
 const productSchema = new mongoose.Schema(
     {
+        barcode: {
+            type: String,
+            trim: true,
+            match: /^\d{8,14}$/,
+            default: undefined
+        },
         owner: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
@@ -71,5 +77,6 @@ const productSchema = new mongoose.Schema(
 );
 
 productSchema.index({ owner: 1, createdAt: -1 });
+productSchema.index({ owner: 1, barcode: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model("Product", productSchema);
