@@ -1,4 +1,5 @@
 const Product = require("../models/product.model");
+const BARCODE_RE = /^\d{8,14}$/;
 
 const productResponse = (product) => ({
     id: product._id,
@@ -56,6 +57,7 @@ const productInput = (body) => ({
 });
 
 const validateProduct = (input) => {
+    if (input.barcode && !BARCODE_RE.test(input.barcode)) return "Barcode must contain 8 to 14 digits";
     if (!input.name || !input.category || !input.weightUnit) return "Name, category, and weight unit are required";
     if (![input.price, input.weightValue, input.stock].every(Number.isFinite) || input.price < 0 || input.weightValue <= 0 || input.stock < 0) {
         return "Price, weight, and stock must be valid positive numbers";
@@ -67,6 +69,28 @@ const validateProduct = (input) => {
 exports.listProducts = async (req, res) => {
     const products = await Product.find({ owner: req.user.id }).sort({ createdAt: -1 });
     res.json({ success: true, products: products.map(productResponse) });
+};
+
+exports.findProductByBarcode = async (req, res) => {
+    const barcode = String(req.params.barcode || "").trim();
+
+    if (!BARCODE_RE.test(barcode)) {
+        return res.status(400).json({
+            success: false,
+            message: "Barcode must contain 8 to 14 digits"
+        });
+    }
+
+    const product = await Product.findOne({
+        owner: req.user.id,
+        barcode
+    });
+
+    return res.json({
+        success: true,
+        exists: Boolean(product),
+        product: product ? productResponse(product) : null
+    });
 };
 
 exports.createProduct = async (req, res) => {

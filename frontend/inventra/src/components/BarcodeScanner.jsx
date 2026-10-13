@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
+import { authenticatedRequest } from "../lib/api.js";
+
 const BARCODE_RE = /^\d{8,14}$/;
 
 export default function BarcodeScanner({ value = "", onChange, onProductFound }) {
@@ -36,6 +38,20 @@ export default function BarcodeScanner({ value = "", onChange, onProductFound })
     setMessageType("");
 
     try {
+      const existingResponse = await authenticatedRequest(
+        `/api/products/barcode/${encodeURIComponent(code)}`
+      );
+
+      if (existingResponse.exists && existingResponse.product) {
+        onProductFound?.({
+          barcode: code,
+          existingProduct: existingResponse.product,
+        });
+        setMessageType("success");
+        setMessage("This product already exists. Review it and update its stock instead of creating a duplicate.");
+        return;
+      }
+
       const response = await fetch(
         `https://world.openfoodfacts.org/api/v3/product/${encodeURIComponent(code)}?fields=code,product_name,brands,image_front_url,categories,quantity`,
         { headers: { Accept: "application/json" } }

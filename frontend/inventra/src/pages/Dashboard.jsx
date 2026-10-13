@@ -62,6 +62,7 @@ function getTimeGreeting() {
 function ProductForm({ initial, onCancel, onSaved }) {
 
   const [values, setValues] = useState(initial || EMPTY_PRODUCT);
+  const [existingProductId, setExistingProductId] = useState(initial?.id || "");
 
   const [error, setError] = useState("");
 
@@ -72,6 +73,21 @@ function ProductForm({ initial, onCancel, onSaved }) {
   const change = (name, value) => setValues((current) => ({ ...current, [name]: value }));
 
   const applyBarcodeProduct = (details) => {
+    if (details.existingProduct) {
+      const existing = details.existingProduct;
+      setExistingProductId(existing.id);
+      setValues({
+        ...existing,
+        price: String(existing.price),
+        weightValue: String(existing.weightValue),
+        stock: String(existing.stock),
+        discountType: existing.discount?.type || "",
+        discountValue: existing.discount?.value ? String(existing.discount.value) : "",
+      });
+      return;
+    }
+
+    setExistingProductId("");
     setValues((current) => ({
       ...current,
       barcode: details.barcode || current.barcode,
@@ -125,12 +141,10 @@ function ProductForm({ initial, onCancel, onSaved }) {
 
     try {
 
-      const data = await apiRequest(
-
-        initial?.id ? `/api/products/${initial.id}` : "/api/products",
-
-        { method: initial?.id ? "PATCH" : "POST", body: JSON.stringify(payload) }
-
+      const productId = existingProductId || initial?.id;
+      const data = await authenticatedRequest(
+        productId ? `/api/products/${productId}` : "/api/products",
+        { method: productId ? "PATCH" : "POST", body: JSON.stringify(payload) }
       );
 
       onSaved(data.product);
@@ -183,9 +197,12 @@ function ProductForm({ initial, onCancel, onSaved }) {
 
         <div>
 
-          <h2 className="text-xl font-semibold">{initial ? "Edit product" : "Add a product"}</h2>
-
-          <p className="mt-1 text-sm text-[#6B6B66]">Fill in the details customers need to make a decision.</p>
+          <h2 className="text-xl font-semibold">{initial || existingProductId ? "Edit product" : "Add a product"}</h2>
+          <p className="mt-1 text-sm text-[#6B6B66]">
+            {existingProductId
+              ? "Existing product found. Update its stock or other store-specific fields."
+              : "Fill in the details customers need to make a decision."}
+          </p>
 
         </div>
 
