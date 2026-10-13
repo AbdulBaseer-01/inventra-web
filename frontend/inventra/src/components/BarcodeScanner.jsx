@@ -57,6 +57,13 @@ export default function BarcodeScanner({ value = "", onChange, onProductFound })
         { headers: { Accept: "application/json" } }
       );
 
+      if (response.status === 404) {
+        onProductFound?.({ barcode: code });
+        setMessageType("info");
+        setMessage("Barcode not found in Open Food Facts. Enter the product details manually.");
+        return;
+      }
+
       if (!response.ok) throw new Error("Product lookup failed. Try again.");
 
       const result = await response.json();
